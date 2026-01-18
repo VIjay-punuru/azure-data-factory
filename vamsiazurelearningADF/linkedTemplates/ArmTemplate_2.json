@@ -718,10 +718,10 @@
 						"timeZone": "India Standard Time",
 						"schedule": {
 							"minutes": [
-								25
+								12
 							],
 							"hours": [
-								15
+								16
 							]
 						}
 					}
