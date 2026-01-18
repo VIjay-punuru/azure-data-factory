@@ -1,0 +1,711 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name"
+		},
+		"SQL_DB_LS": {
+			"type": "string"
+		},
+		"ADLS_LS_1": {
+			"type": "string"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/GENERIC FILE DELIMITED ING')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy data from ADLSG2",
+						"description": "This activity will establish the connectivity and copy the files from Source to destination",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "loaddt",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": false,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "Generic_source_files",
+								"type": "DatasetReference",
+								"parameters": {
+									"source_container_name": {
+										"value": "@variables('source_container')",
+										"type": "Expression"
+									},
+									"Source_path": {
+										"value": "@variables('Source_path')",
+										"type": "Expression"
+									},
+									"source_file": {
+										"value": "@concat(variables('source_file'),formatDateTime(addDays(utcnow(),variables('minus_days')),'yyyyMMdd'),'.csv')",
+										"type": "Expression"
+									},
+									"minus_day": "-1"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "bronzedata",
+								"type": "DatasetReference",
+								"parameters": {
+									"bronze_container_name": {
+										"value": "@variables('bronze_container_name')",
+										"type": "Expression"
+									},
+									"bronze_file_path": {
+										"value": "@concat(variables('bronze_file_path'),formatDateTime(adddays(utcnow(),variables('minus_days')),'yyyyMMdd'))",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					},
+					{
+						"name": "pre_audit_load",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "load all param",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "SELECT '@{pipeline().Pipeline}' as pipeline_name,'@{pipeline().RunId}' as pipeline_id,'Running' as run_status,@{pipeline().parameters.parent_job_id} as parent_job_id,@{pipeline().parameters.child_job_id} as child_job_id,'' as source,'' as target,'@{pipeline().TriggerTime}' as run_start_ts,0 as src_count,0 as tgt_count,'' as recon_status,'' as error_code,'' as error_description",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "eds_audit",
+								"type": "DatasetReference"
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "eds_audit",
+								"type": "DatasetReference"
+							}
+						]
+					},
+					{
+						"name": "Failed",
+						"type": "Script",
+						"dependsOn": [
+							{
+								"activity": "Copy data from ADLSG2",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"linkedServiceName": {
+							"referenceName": "[parameters('SQL_DB_LS')]",
+							"type": "LinkedServiceReference"
+						},
+						"typeProperties": {
+							"scripts": [
+								{
+									"type": "Query",
+									"text": {
+										"value": "UPDATE eds_job_run\nSET run_status = '@{activity('Copy data from ADLSG2').output.executionDetails[0].status}',\n    run_end_ts = GETDATE(),\n    src_count = @{activity('Copy data from ADLSG2').output.dataRead},\n    tgt_count = @{activity('Copy data from ADLSG2').output.dataWritten},\n    error_code = '@{activity('Copy data from ADLSG2').output.errors[0].Code}',\n    error_description = '@{replace(activity('Copy data from ADLSG2').output.errors[0].Message,'''','')}',\n    loaddt = @{variables('loaddt')},\n    recon_status = '@{activity('Copy data from ADLSG2').output.executionDetails[0].status}'\nWHERE parent_job_id = @{pipeline().parameters.parent_job_id}\n  AND child_job_id = @{pipeline().parameters.child_job_id}\nAND pipeline_id = '@{pipeline().RunId}'",
+										"type": "Expression"
+									}
+								}
+							],
+							"scriptBlockExecutionTimeout": "02:00:00"
+						}
+					},
+					{
+						"name": "reon_status",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "Copy data from ADLSG2",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@equals(activity('Copy data from ADLSG2').output.dataRead, activity('Copy data from ADLSG2').output.dataWritten)\n",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "recon failure",
+									"type": "Script",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"linkedServiceName": {
+										"referenceName": "[parameters('SQL_DB_LS')]",
+										"type": "LinkedServiceReference"
+									},
+									"typeProperties": {
+										"scripts": [
+											{
+												"type": "Query",
+												"text": {
+													"value": "UPDATE eds_job_run\nSET run_status = '@{activity('Copy data from ADLSG2').output.executionDetails[0].status}',\n    src_count = @{activity('Copy data from ADLSG2').output.dataRead},\n    tgt_count = @{activity('Copy data from ADLSG2').output.dataWritten},\n    loaddt = @{variables('loaddt')},\n    run_end_ts = GETDATE(),\n    recon_status = '@{activity('Copy data from ADLSG2').output.executionDetails[0].status}'\nWHERE parent_job_id = @{pipeline().parameters.parent_job_id}\n  AND child_job_id = @{pipeline().parameters.child_job_id}\nAND pipeline_id = '@{pipeline().RunId}'",
+													"type": "Expression"
+												}
+											}
+										],
+										"scriptBlockExecutionTimeout": "02:00:00"
+									}
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "recon_Success",
+									"type": "Script",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"linkedServiceName": {
+										"referenceName": "[parameters('SQL_DB_LS')]",
+										"type": "LinkedServiceReference"
+									},
+									"typeProperties": {
+										"scripts": [
+											{
+												"type": "Query",
+												"text": {
+													"value": "UPDATE eds_job_run\nSET run_status = '@{activity('Copy data from ADLSG2').output.executionDetails[0].status}',\n    src_count = @{activity('Copy data from ADLSG2').output.dataRead},\n    tgt_count = @{activity('Copy data from ADLSG2').output.dataWritten},\n    loaddt = @{variables('loaddt')},\n    run_end_ts = GETDATE(),\n    recon_status = '@{activity('Copy data from ADLSG2').output.executionDetails[0].status}'\nWHERE parent_job_id = @{pipeline().parameters.parent_job_id}\n  AND child_job_id = @{pipeline().parameters.child_job_id}\nAND pipeline_id = '@{pipeline().RunId}'",
+													"type": "Expression"
+												}
+											}
+										],
+										"scriptBlockExecutionTimeout": "02:00:00"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "loaddt",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "pre_audit_load",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "loaddt",
+							"value": {
+								"value": "@formatDateTime(addDays(utcnow(),variables('minus_days')),'yyyyMMdd')",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Get Params",
+						"description": "It will fetch the params",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "SELECT param_name, param_value \nFROM eds_job_param \nWHERE parent_job_id = @{pipeline().parameters.parent_job_id}\n  AND child_job_id = @{pipeline().parameters.child_job_id}\n  AND is_encrpt = 'N'\n  AND param_env = '@{pipeline().parameters.param_env}'\nORDER BY param_id",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "SQL_Dataset",
+								"type": "DatasetReference"
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "load all param",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Get Params",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get Params').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "assign paramvalue to variable",
+									"type": "Switch",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"on": {
+											"value": "@item().param_name",
+											"type": "Expression"
+										},
+										"cases": [
+											{
+												"value": "source_container_name",
+												"activities": [
+													{
+														"name": "source_container",
+														"type": "SetVariable",
+														"dependsOn": [],
+														"policy": {
+															"secureOutput": false,
+															"secureInput": false
+														},
+														"userProperties": [],
+														"typeProperties": {
+															"variableName": "source_container",
+															"value": {
+																"value": "@item().param_value",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"value": "Source_path",
+												"activities": [
+													{
+														"name": "Source_path",
+														"type": "SetVariable",
+														"dependsOn": [],
+														"policy": {
+															"secureOutput": false,
+															"secureInput": false
+														},
+														"userProperties": [],
+														"typeProperties": {
+															"variableName": "Source_path",
+															"value": {
+																"value": "@item().param_value",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"value": "source_file",
+												"activities": [
+													{
+														"name": "source_file",
+														"type": "SetVariable",
+														"dependsOn": [],
+														"policy": {
+															"secureOutput": false,
+															"secureInput": false
+														},
+														"userProperties": [],
+														"typeProperties": {
+															"variableName": "source_file",
+															"value": {
+																"value": "@item().param_value",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"value": "bronze_container_name",
+												"activities": [
+													{
+														"name": "bronze_container_name",
+														"type": "SetVariable",
+														"dependsOn": [],
+														"policy": {
+															"secureOutput": false,
+															"secureInput": false
+														},
+														"userProperties": [],
+														"typeProperties": {
+															"variableName": "bronze_container_name",
+															"value": {
+																"value": "@item().param_value",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"value": "bronze_file_path",
+												"activities": [
+													{
+														"name": "bronze_file_path",
+														"type": "SetVariable",
+														"dependsOn": [],
+														"policy": {
+															"secureOutput": false,
+															"secureInput": false
+														},
+														"userProperties": [],
+														"typeProperties": {
+															"variableName": "bronze_file_path",
+															"value": {
+																"value": "@item().param_value",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"value": "minus_days",
+												"activities": [
+													{
+														"name": "minus_day",
+														"type": "SetVariable",
+														"dependsOn": [],
+														"policy": {
+															"secureOutput": false,
+															"secureInput": false
+														},
+														"userProperties": [],
+														"typeProperties": {
+															"variableName": "minus_days",
+															"value": {
+																"value": "@int(item().param_value)",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"parameters": {
+					"parent_job_id": {
+						"type": "int",
+						"defaultValue": 1
+					},
+					"child_job_id": {
+						"type": "int",
+						"defaultValue": 101
+					},
+					"param_env": {
+						"type": "string",
+						"defaultValue": "dev"
+					}
+				},
+				"variables": {
+					"src_count": {
+						"type": "Integer"
+					},
+					"source_count": {
+						"type": "String"
+					},
+					"tgt_count": {
+						"type": "String"
+					},
+					"target_count": {
+						"type": "Integer"
+					},
+					"loaddt": {
+						"type": "String"
+					},
+					"source_container": {
+						"type": "String"
+					},
+					"Source_path": {
+						"type": "String"
+					},
+					"source_file": {
+						"type": "String"
+					},
+					"bronze_container_name": {
+						"type": "String"
+					},
+					"bronze_file_path": {
+						"type": "String"
+					},
+					"minus_days": {
+						"type": "Integer"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-01-18T09:44:38Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Generic_source_files')]",
+				"[concat(variables('factoryId'), '/datasets/bronzedata')]",
+				"[concat(variables('factoryId'), '/datasets/eds_audit')]",
+				"[concat(variables('factoryId'), '/datasets/SQL_Dataset')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Generic_source_files')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('ADLS_LS_1')]",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"source_container_name": {
+						"type": "string"
+					},
+					"Source_path": {
+						"type": "string"
+					},
+					"source_file": {
+						"type": "string"
+					},
+					"minus_day": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().source_file",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().Source_path",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().source_container_name",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/bronzedata')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('ADLS_LS_1')]",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"bronze_container_name": {
+						"type": "string"
+					},
+					"bronze_file_path": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@dataset().bronze_file_path",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().bronze_container_name",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/eds_audit')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('SQL_DB_LS')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "eds_job_run"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SQL_Dataset')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('SQL_DB_LS')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "branch_id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "branch_country",
+						"type": "varchar"
+					},
+					{
+						"name": "branch_city",
+						"type": "varchar"
+					}
+				]
+			},
+			"dependsOn": []
+		}
+	]
+}
