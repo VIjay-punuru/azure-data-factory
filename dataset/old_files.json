@@ -1,0 +1,20 @@
+{
+	"name": "old_files",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ADLS_LS_1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "AgentData",
+				"fileSystem": "landing"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	}
+}
