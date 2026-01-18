@@ -21,7 +21,11 @@
 				"name": "branch_city",
 				"type": "varchar"
 			}
-		]
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "eds_job_param"
+		}
 	},
 	"type": "Microsoft.DataFactory/factories/datasets"
 }
