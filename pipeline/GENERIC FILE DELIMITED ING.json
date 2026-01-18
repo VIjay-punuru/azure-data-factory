@@ -293,6 +293,7 @@
 			},
 			{
 				"name": "Get Params",
+				"description": "It will fetch the params",
 				"type": "Lookup",
 				"dependsOn": [],
 				"policy": {
