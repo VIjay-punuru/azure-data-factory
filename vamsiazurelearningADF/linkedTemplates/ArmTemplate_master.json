@@ -1,0 +1,201 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "vamsiazurelearningADF"
+		},
+		"ADLS_LS_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'ADLS_LS'"
+		},
+		"ADLS_LS_1_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'ADLS_LS_1'"
+		},
+		"Azuredatabricks_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'Azuredatabricks'"
+		},
+		"SQL_DB_LS_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'SQL_DB_LS'"
+		},
+		"SQL_DB_LS_1_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'SQL_DB_LS_1'"
+		},
+		"ADLS_LS_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://vamsi20042002adls.dfs.core.windows.net/"
+		},
+		"ADLS_LS_1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://vamsi20042002adls.dfs.core.windows.net/"
+		},
+		"SQL_DB_LS_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "vamsiazuresqlserver.database.windows.net"
+		},
+		"SQL_DB_LS_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "vamsi-learning-sql-database"
+		},
+		"SQL_DB_LS_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "vamsireddyp"
+		},
+		"SQL_DB_LS_1_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "vamsiazuresqlserver.database.windows.net"
+		},
+		"SQL_DB_LS_1_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "vamsi-learning-sql-database"
+		},
+		"SQL_DB_LS_1_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "vamsi-learning-sql-database"
+		},
+		"linked_get_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://raw.githubusercontent.com/"
+		},
+		"generic_properties_GENERIC FILE DELIMITED ING_parameters_parent_job_id": {
+			"type": "int",
+			"defaultValue": 1
+		},
+		"generic_properties_GENERIC FILE DELIMITED ING_parameters_child_job_id": {
+			"type": "int",
+			"defaultValue": 101
+		},
+		"generic_properties_GENERIC FILE DELIMITED ING_parameters_param_env": {
+			"type": "string",
+			"defaultValue": "dev"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "vamsiazurelearningADF_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"ADLS_LS_accountKey": {
+						"value": "[parameters('ADLS_LS_accountKey')]"
+					},
+					"ADLS_LS_1_accountKey": {
+						"value": "[parameters('ADLS_LS_1_accountKey')]"
+					},
+					"Azuredatabricks_accessToken": {
+						"value": "[parameters('Azuredatabricks_accessToken')]"
+					},
+					"SQL_DB_LS_password": {
+						"value": "[parameters('SQL_DB_LS_password')]"
+					},
+					"SQL_DB_LS_1_password": {
+						"value": "[parameters('SQL_DB_LS_1_password')]"
+					},
+					"ADLS_LS_properties_typeProperties_url": {
+						"value": "[parameters('ADLS_LS_properties_typeProperties_url')]"
+					},
+					"ADLS_LS_1_properties_typeProperties_url": {
+						"value": "[parameters('ADLS_LS_1_properties_typeProperties_url')]"
+					},
+					"SQL_DB_LS_properties_typeProperties_server": {
+						"value": "[parameters('SQL_DB_LS_properties_typeProperties_server')]"
+					},
+					"SQL_DB_LS_properties_typeProperties_database": {
+						"value": "[parameters('SQL_DB_LS_properties_typeProperties_database')]"
+					},
+					"SQL_DB_LS_properties_typeProperties_userName": {
+						"value": "[parameters('SQL_DB_LS_properties_typeProperties_userName')]"
+					},
+					"SQL_DB_LS_1_properties_typeProperties_server": {
+						"value": "[parameters('SQL_DB_LS_1_properties_typeProperties_server')]"
+					},
+					"SQL_DB_LS_1_properties_typeProperties_database": {
+						"value": "[parameters('SQL_DB_LS_1_properties_typeProperties_database')]"
+					},
+					"SQL_DB_LS_1_properties_typeProperties_userName": {
+						"value": "[parameters('SQL_DB_LS_1_properties_typeProperties_userName')]"
+					},
+					"linked_get_properties_typeProperties_url": {
+						"value": "[parameters('linked_get_properties_typeProperties_url')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "vamsiazurelearningADF_ArmTemplate_1",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'vamsiazurelearningADF_ArmTemplate_0')]"
+			]
+		},
+		{
+			"name": "vamsiazurelearningADF_ArmTemplate_2",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_2.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"generic_properties_GENERIC FILE DELIMITED ING_parameters_parent_job_id": {
+						"value": "[parameters('generic_properties_GENERIC FILE DELIMITED ING_parameters_parent_job_id')]"
+					},
+					"generic_properties_GENERIC FILE DELIMITED ING_parameters_child_job_id": {
+						"value": "[parameters('generic_properties_GENERIC FILE DELIMITED ING_parameters_child_job_id')]"
+					},
+					"generic_properties_GENERIC FILE DELIMITED ING_parameters_param_env": {
+						"value": "[parameters('generic_properties_GENERIC FILE DELIMITED ING_parameters_param_env')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'vamsiazurelearningADF_ArmTemplate_1')]"
+			]
+		}
+	]
+}
