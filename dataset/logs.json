@@ -1,0 +1,25 @@
+{
+	"name": "logs",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ADLS_LS_1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "logs",
+				"folderPath": "logs",
+				"fileSystem": "reporting"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

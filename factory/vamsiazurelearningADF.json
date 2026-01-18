@@ -1,0 +1,9 @@
+{
+	"name": "vamsiazurelearningADF",
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "df6fa9de-10e0-4680-99b3-3044d59cb88a",
+		"tenantId": "4a70eb00-3f5e-4903-9184-047694a0eb8c"
+	}
+}

@@ -1,0 +1,114 @@
+{
+	"name": "GenericIngestionApp",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set variable1",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "loaddt",
+					"value": {
+						"value": "@formatDateTime(utcNow(),'yyyyMMdd' )",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Source file checking",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Set variable1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "Checking_Source_Files",
+						"type": "DatasetReference",
+						"parameters": {
+							"filename": {
+								"value": "@concat('trasaction','_',variables('loaddt'),'.txt')",
+								"type": "Expression"
+							}
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Notebook1",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Source file checking",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Users/vits.20731a0595@gmail.com/genericingestion",
+					"baseParameters": {
+						"inputpath": {
+							"value": "\"/mnt/input/landing/\"",
+							"type": "Expression"
+						},
+						"filename": {
+							"value": "@concat('trasaction','_',variables('loaddt'),'.txt')",
+							"type": "Expression"
+						},
+						"format": "\"csv\""
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "Azuredatabricks",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"variables": {
+			"loaddt": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-11-02T18:26:59Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

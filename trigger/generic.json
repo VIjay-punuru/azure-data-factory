@@ -1,0 +1,37 @@
+{
+	"name": "generic",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "GENERIC FILE DELIMITED ING",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"parent_job_id": 1,
+					"child_job_id": 101,
+					"param_env": "dev"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2026-01-18T15:21:00",
+				"timeZone": "India Standard Time",
+				"schedule": {
+					"minutes": [
+						25
+					],
+					"hours": [
+						15
+					]
+				}
+			}
+		}
+	}
+}
