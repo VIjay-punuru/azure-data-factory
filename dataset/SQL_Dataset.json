@@ -2,7 +2,7 @@
 	"name": "SQL_Dataset",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "SQL_DB_LS_1",
+			"referenceName": "SQL_DB_LS",
 			"type": "LinkedServiceReference"
 		},
 		"annotations": [],
@@ -21,11 +21,7 @@
 				"name": "branch_city",
 				"type": "varchar"
 			}
-		],
-		"typeProperties": {
-			"schema": "dbo",
-			"table": "Branch"
-		}
+		]
 	},
 	"type": "Microsoft.DataFactory/factories/datasets"
 }
