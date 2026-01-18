@@ -47,15 +47,6 @@
 		"linked_get_properties_typeProperties_url": {
 			"value": "https://raw.githubusercontent.com/"
 		},
-		"generic_properties_GENERIC FILE DELIMITED ING_parameters_parent_job_id": {
-			"value": 1
-		},
-		"generic_properties_GENERIC FILE DELIMITED ING_parameters_child_job_id": {
-			"value": 101
-		},
-		"generic_properties_GENERIC FILE DELIMITED ING_parameters_param_env": {
-			"value": "dev"
-		},
 		"containerUri": {
 			"value": ""
 		},

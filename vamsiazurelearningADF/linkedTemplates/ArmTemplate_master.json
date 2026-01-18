@@ -63,18 +63,6 @@
 			"type": "string",
 			"defaultValue": "https://raw.githubusercontent.com/"
 		},
-		"generic_properties_GENERIC FILE DELIMITED ING_parameters_parent_job_id": {
-			"type": "int",
-			"defaultValue": 1
-		},
-		"generic_properties_GENERIC FILE DELIMITED ING_parameters_child_job_id": {
-			"type": "int",
-			"defaultValue": 101
-		},
-		"generic_properties_GENERIC FILE DELIMITED ING_parameters_param_env": {
-			"type": "string",
-			"defaultValue": "dev"
-		},
 		"containerUri": {
 			"type": "string",
 			"metadata": "URI to storage account containing linked ARM templates"
@@ -181,15 +169,6 @@
 				"parameters": {
 					"factoryName": {
 						"value": "[parameters('factoryName')]"
-					},
-					"generic_properties_GENERIC FILE DELIMITED ING_parameters_parent_job_id": {
-						"value": "[parameters('generic_properties_GENERIC FILE DELIMITED ING_parameters_parent_job_id')]"
-					},
-					"generic_properties_GENERIC FILE DELIMITED ING_parameters_child_job_id": {
-						"value": "[parameters('generic_properties_GENERIC FILE DELIMITED ING_parameters_child_job_id')]"
-					},
-					"generic_properties_GENERIC FILE DELIMITED ING_parameters_param_env": {
-						"value": "[parameters('generic_properties_GENERIC FILE DELIMITED ING_parameters_param_env')]"
 					}
 				}
 			},
